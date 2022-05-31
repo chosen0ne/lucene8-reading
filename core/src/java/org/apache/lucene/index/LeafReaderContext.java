@@ -25,8 +25,10 @@ import java.util.List;
  */
 public final class LeafReaderContext extends IndexReaderContext {
   /** The reader's ord in the top-level's leaves array */
+  // ordinal, segment的序号
   public final int ord;
   /** The reader's absolute doc base */
+  // document的docid在segment中的起始值
   public final int docBase;
   
   private final LeafReader reader;

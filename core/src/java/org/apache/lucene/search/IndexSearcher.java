@@ -603,6 +603,8 @@ public class IndexSearcher {
       final LeafReaderContext[] leaves = leafSlices[leafSlices.length - 1].leaves;
       final C collector = collectors.get(leafSlices.length - 1);
       // execute the last on the caller thread
+      // 为什么一定要在caller thread执行？
+      // 可以减少一次context switch。如果加到executor中，需要一次context switch才能轮到这个task执行。
       search(Arrays.asList(leaves), weight, collector);
       topDocsFutures.add(CompletableFuture.completedFuture(collector));
       final List<C> collectedCollectors = new ArrayList<>();
@@ -647,6 +649,7 @@ public class IndexSearcher {
     for (LeafReaderContext ctx : leaves) { // search each subreader
       final LeafCollector leafCollector;
       try {
+        // 每个ctx对应一个segment
         leafCollector = collector.getLeafCollector(ctx);
       } catch (CollectionTerminatedException e) {
         // there is no doc of interest in this reader context
@@ -723,6 +726,9 @@ public class IndexSearcher {
     final QueryCache queryCache = this.queryCache;
     Weight weight = query.createWeight(this, scoreMode, boost);
     if (scoreMode.needsScores() == false && queryCache != null) {
+      // 不需要score时，会进行cache
+      // QueryCache会对weight创建Decorator，并将结果cache到BitsSet或者RoaringBitsSet
+      // 后续对weight访问时会从cache中读取
       weight = queryCache.doCache(weight, queryCachingPolicy);
     }
     return weight;
